@@ -1,0 +1,29 @@
+# Dependências
+node_modules
+
+# Builds e distribuições
+dist
+build
+.expo
+.expo-shared
+web-build
+
+# Artefatos do Expo
+.expo/*
+.expo-shared/*
+dist_expo
+
+# Artefatos de cache
+.cache
+.expo-cache
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Configurações de IDE
+.vscode
+.idea
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
