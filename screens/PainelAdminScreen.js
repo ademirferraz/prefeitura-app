@@ -1,186 +1,93 @@
-import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-} from 'react-native';
+// screens/AdminPanel.js
+import React, { useState } from 'react';
+import { View, Text, TextInput, Button, Alert, Image, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
-const baseMunicipal = [
-  { nome: 'José Oliveira', nascimento: '24/10/1970', origem: 'base', cpf: '00000000191' },
-  { nome: 'Ana Beatriz', nascimento: '25/10/1985', origem: 'base', cpf: '00000000282' },
-  { nome: 'Carlos Mendes', nascimento: '28/10/1990', origem: 'base', cpf: '00000000373' },
-  { nome: 'Luciana Costa', nascimento: '01/11/1975', origem: 'base', cpf: '00000000464' },
-];
-
-export default function PainelAdminScreen() {
+export default function AdminPanel() {
   const navigation = useNavigation();
-  const [aniversariantesHoje, setAniversariantesHoje] = useState([]);
-  const [aniversariantesFuturos, setAniversariantesFuturos] = useState([]);
-  const [mensagemGerada, setMensagemGerada] = useState('');
 
-  // === LIMPEZA AUTOMÁTICA DE ESTADOS AO SAIR DA TELA ===
-  useFocusEffect(
-    useCallback(() => {
-      return () => {
-        setAniversariantesHoje([]); setAniversariantesFuturos([]); setMensagemGerada("");
-      };
-    }, [])
-  );
+  // Formulário
+  const [nome, setNome] = useState('');
+  const [cpf, setCpf] = useState('');
+  const [dataNasc, setDataNasc] = useState('');
+  const [senha, setSenha] = useState('');
+  const [repetirSenha, setRepetirSenha] = useState('');
 
-
-  useEffect(() => {
-    const hoje = new Date();
-
-    const calcularIdade = (data) => {
-      const [dia, mes, ano] = data.split('/');
-      const nascimento = new Date(`${ano}-${mes}-${dia}`);
-      let idade = hoje.getFullYear() - nascimento.getFullYear();
-      const aindaNaoFez = hoje.getMonth() < nascimento.getMonth() ||
-        (hoje.getMonth() === nascimento.getMonth() && hoje.getDate() < nascimento.getDate());
-      return aindaNaoFez ? idade - 1 : idade;
-    };
-
-    const verificarDia = (data, diasAdiante = 0) => {
-      const [dia, mes] = data.split('/');
-      const alvo = new Date(hoje);
-      alvo.setDate(hoje.getDate() + diasAdiante);
-      return parseInt(dia) === alvo.getDate() && parseInt(mes) === alvo.getMonth() + 1;
-    };
-
-    const verificarFuturo = (data) => {
-      for (let i = 1; i <= 7; i++) {
-        if (verificarDia(data, i)) return true;
-      }
-      return false;
-    };
-
-    const hojeArr = [];
-    const futurosArr = [];
-
-    baseMunicipal.forEach((pessoa) => {
-      const idade = calcularIdade(pessoa.nascimento);
-      const pessoaComIdade = { ...pessoa, idade };
-
-      if (verificarDia(pessoa.nascimento)) {
-        hojeArr.push(pessoaComIdade);
-      } else if (verificarFuturo(pessoa.nascimento)) {
-        futurosArr.push(pessoaComIdade);
-      }
-    });
-
-    setAniversariantesHoje(hojeArr);
-    setAniversariantesFuturos(futurosArr);
-  }, []);
-
-  const gerarMensagem = (nome, idade, origem) => {
-    const tipo = origem === 'app' ? 'personalizada' : 'padrão';
-    const texto =
-      idade >= 18
-        ? `Parabéns, ${nome}, pelos seus ${idade} anos! Que seu dia seja especial.`
-        : `Feliz aniversário, ${nome}! Que sua infância seja cheia de alegria.`;
-    setMensagemGerada(`Mensagem ${tipo}: ${texto}`);
+  const validarSenha = (s) => {
+    if (s.length < 6) return false;
+    if (!/[A-Z]/.test(s)) return false;
+    if (!/[a-z]/.test(s)) return false;
+    if (!/[0-9]/.test(s)) return false;
+    return true;
   };
 
-  const renderPessoa = ({ item }) => (
-    <View style={styles.card}>
-      <Text style={styles.nome}>🎉 {item.nome}</Text>
-      <Text style={styles.info}>Nascimento: {item.nascimento} ({item.idade} anos)</Text>
-      <Text style={styles.origem}>
-        Origem: {item.origem === 'app' ? 'Cadastrado no app' : 'Base municipal'}
-      </Text>
-      <TouchableOpacity
-        style={styles.botao}
-        onPress={() => gerarMensagem(item.nome, item.idade, item.origem)}
-      >
-        <Text style={styles.botaoTexto}>Gerar mensagem</Text>
-      </TouchableOpacity>
-    </View>
-  );
+  const cadastrar = () => {
+    if (!nome || !cpf || !dataNasc || !senha || !repetirSenha) {
+      Alert.alert('Erro', 'Preencha todos os campos');
+      return;
+    }
+    if (senha !== repetirSenha) {
+      Alert.alert('Erro', 'As senhas não coincidem');
+      return;
+    }
+    if (!validarSenha(senha)) {
+      Alert.alert('Senha inválida', 'A senha deve ter no mínimo 6 caracteres: 1 maiúscula, 1 minúscula e 1 número');
+      return;
+    }
+    Alert.alert('Sucesso', `Cidadão ${nome} cadastrado com sucesso!`);
+    // Limpar campos
+    setNome(''); setCpf(''); setDataNasc(''); setSenha(''); setRepetirSenha('');
+  };
 
   return (
     <ScrollView style={styles.container}>
-      <TouchableOpacity style={styles.voltar} onPress={() => navigation.goBack()}>
-        <Text style={styles.voltarTexto}>← Voltar</Text>
+      {/* LOGO + TÍTULO */}
+      <View style={styles.header}>
+        <Image source={require('../assets/logo.png')} style={styles.logo} resizeMode="contain" />
+        <Text style={styles.title}>PAINEL DO ADMINISTRADOR</Text>
+      </View>
+
+      <Text style={styles.welcome}>Bem-vindo, Ademir!</Text>
+
+      {/* FORMULÁRIO CADASTRO CIDADÃO */}
+      <View style={styles.form}>
+        <Text style={styles.label}>Nome completo</Text>
+        <TextInput style={styles.input} value={nome} onChangeText={setNome} placeholder="João Silva" />
+
+        <Text style={styles.label}>CPF</Text>
+        <TextInput style={styles.input} value={cpf} onChangeText={setCpf} placeholder="000.000.000-00" keyboardType="numeric" />
+
+        <Text style={styles.label}>Data de Nascimento</Text>
+        <TextInput style={styles.input} value={dataNasc} onChangeText={setDataNasc} placeholder="01/01/1990" />
+
+        <Text style={styles.label}>Senha</Text>
+        <TextInput style={styles.input} value={senha} onChangeText={setSenha} placeholder="Mínimo 6 caracteres" secureTextEntry />
+
+        <Text style={styles.label}>Repetir Senha</Text>
+        <TextInput style={styles.input} value={repetirSenha} onChangeText={setRepetirSenha} placeholder="Digite novamente" secureTextEntry />
+
+        <Button title="CADASTRAR CIDADÃO" onPress={cadastrar} color="#0066cc" />
+      </View>
+
+      {/* BOTÃO VOLTAR */}
+      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <Ionicons name="arrow-back" size={24} color="white" />
+        <Text style={styles.backText}>VOLTAR</Text>
       </TouchableOpacity>
-
-      <Text style={styles.titulo}>Painel do Prefeito</Text>
-
-      <TouchableOpacity
-        style={[styles.botao, { marginBottom: 20 }]}
-        onPress={() => navigation.navigate('EditarInformacoes')}
-      >
-        <Text style={styles.botaoTexto}>Editar Informações e Aviso</Text>
-      </TouchableOpacity>
-
-      <Text style={styles.subtitulo}>Aniversariantes de hoje</Text>
-      <FlatList
-        data={aniversariantesHoje}
-        keyExtractor={(item) => item.cpf}
-        renderItem={renderPessoa}
-        ListEmptyComponent={<Text style={styles.vazio}>Nenhum aniversariante hoje.</Text>}
-      />
-
-      <Text style={styles.subtitulo}>Próximos aniversários (7 dias)</Text>
-      <FlatList
-        data={aniversariantesFuturos}
-        keyExtractor={(item) => item.cpf}
-        renderItem={renderPessoa}
-        ListEmptyComponent={<Text style={styles.vazio}>Nenhum evento futuro encontrado.</Text>}
-      />
-
-      {mensagemGerada !== '' && (
-        <View style={styles.mensagemBox}>
-          <Text style={styles.mensagemTexto}>{mensagemGerada}</Text>
-        </View>
-      )}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#e3f2fd' },
-  voltar: { marginBottom: 10 },
-  voltarTexto: { fontSize: 16, color: '#1565c0', fontWeight: 'bold' },
-  titulo: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#0d47a1',
-    textAlign: 'center',
-  },
-  subtitulo: { fontSize: 16, marginBottom: 12, color: '#333' },
-  vazio: { fontSize: 16, color: '#999', textAlign: 'center', marginBottom: 20 },
-  card: {
-    backgroundColor: '#bbdefb',
-    padding: 16,
-    borderRadius: 10,
-    marginBottom: 12,
-  },
-  nome: { fontSize: 18, fontWeight: 'bold', color: '#0d47a1' },
-  info: { fontSize: 14, color: '#555' },
-  origem: { fontSize: 13, color: '#777', marginBottom: 8 },
-  botao: {
-    backgroundColor: '#1565c0',
-    padding: 10,
-    borderRadius: 6,
-    alignItems: 'center',
-    marginTop: 6,
-  },
-  botaoTexto: { color: '#fff', fontWeight: 'bold' },
-  mensagemBox: {
-    marginTop: 20,
-    padding: 16,
-    backgroundColor: '#c5cae9',
-    borderRadius: 8,
-  },
-  mensagemTexto: {
-    fontSize: 16,
-    color: '#1a237e',
-    textAlign: 'center',
-    fontWeight: '500',
-  },
+  container: { flex: 1, backgroundColor: '#f8f9fa' },
+  header: { alignItems: 'center', marginVertical: 20 },
+  logo: { width: 80, height: 80, marginBottom: 10 },
+  title: { fontSize: 24, fontWeight: 'bold', color: '#0066cc' },
+  welcome: { textAlign: 'center', fontSize: 16, color: '#555', marginBottom: 20 },
+  form: { paddingHorizontal: 20 },
+  label: { fontSize: 14, fontWeight: '600', marginTop: 15, marginBottom: 5, color: '#333' },
+  input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 12, backgroundColor: '#fff' },
+  backButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0066cc', margin: 20, padding: 15, borderRadius: 10 },
+  backText: { color: 'white', fontWeight: 'bold', marginLeft: 8, fontSize: 16 },
 });

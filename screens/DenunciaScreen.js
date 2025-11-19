@@ -8,7 +8,7 @@ import {
   Alert,
 } from 'react-native';
 import { collection, addDoc } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
+import { db } from './firebaseConfig';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function DenunciaScreen({ navigation }) {

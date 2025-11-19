@@ -3,13 +3,14 @@
     "name": "Prefeitura",
     "slug": "prefeituraAppLimpo",
     "version": "1.0.2",
-     "main": "App.js",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "scheme": "prefeitura",
     "description": "Aplicativo oficial da Prefeitura de Bom Conselho para serviços e elogios",
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -40,6 +41,9 @@
     },
     "updates": {
       "url": "https://u.expo.dev/9e77698f-937b-4e01-918a-eb1088ce7342"
-    }
+    },
+    "plugins": [
+      "expo-font"
+    ]
   }
 }

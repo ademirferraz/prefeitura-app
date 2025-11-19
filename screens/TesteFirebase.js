@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { View, Text, Alert } from 'react-native';
-import { db } from '../firebaseConfig';
+import { db } from './firebaseConfig';
 import { doc, setDoc } from 'firebase/firestore';
 
 export default function TesteFirebase() {

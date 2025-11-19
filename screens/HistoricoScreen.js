@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, Image, Linking, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
-import { db } from '../firebaseConfig';
+import { db } from './firebaseConfig';
 import { collection, getDocs } from 'firebase/firestore';
 
 export default function HistoricoScreen() {

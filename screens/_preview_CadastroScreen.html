@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Preview - CadastroScreen.js</title>
+  <style>
+    body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; margin: 24px; background:#f7f7f8; color:#111 }
+    pre { background:#fff; padding:16px; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.08); overflow:auto }
+    h1 { font-size:18px; margin-bottom:12px }
+    .meta { margin-bottom:8px; color:#444 }
+    a.button { display:inline-block; padding:8px 12px; background:#0066cc; color:#fff; border-radius:6px; text-decoration:none }
+  </style>
+</head>
+<body>
+  <h1>Preview de <code>CadastroScreen.js</code></h1>
+  <div class="meta">Arquivo gerado automaticamente para visualização — abra este arquivo diretamente no navegador (sem servidor).</div>
+  <a class="button" href="file:///d:/projetos/prefeituraAppLimpo/screens/CadastroScreen.js">Abrir o arquivo JS</a>
+  <h2>Código</h2>
+  <pre><code>// screens/CadastroScreen.js
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+
+export default function CadastroScreen() {
+  const navigation = useNavigation();
+
+  return (
+    <View style={styles.container}>
+      {/* LOGO + TÍTULO */}
+      <View style={styles.header}>
+        <Image source={require('../assets/logo.png')} style={styles.logo} resizeMode="contain" />
+        <Text style={styles.title}>Criar Conta</Text>
+      </View>
+
+      {/* ROLDANA ADMIN */}
+      <TouchableOpacity
+        onPress={() => {
+          let count = 0;
+          const start = Date.now();
+          const handler = setInterval(() => {
+            count++;
+            if (count >= 5) {
+              clearInterval(handler);
+              navigation.navigate('AdminPanel');
+            }
+            if (Date.now() - start > 3000) clearInterval(handler);
+          }, 100);
+        }}
+        style={styles.gearButton}
+      >
+        <Ionicons name="settings-outline" size={24} color="black" />
+      </TouchableOpacity>
+
+      {/* BOTÃO VOLTAR */}
+      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <Ionicons name="arrow-back" size={24} color="white" />
+        <Text style={styles.backText}>VOLTAR</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center' },
+  header: { alignItems: 'center', marginBottom: 30 },
+  logo: { width: 100, height: 100 },
+  title: { fontSize: 26, fontWeight: 'bold', color: '#0066cc', marginTop: 10 },
+  gearButton: { padding: 15, backgroundColor: '#eee', borderRadius: 30, marginBottom: 40 },
+  backButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0066cc', padding: 15, borderRadius: 10 },
+  backText: { color: 'white', fontWeight: 'bold', marginLeft: 8 },
+});
+</code></pre>
+
+  <p style="margin-top:18px;color:#666">Se quiser que eu gere um servidor estático novamente, posso tentar outra abordagem — ou você pode rodar o servidor localmente com os comandos PowerShell que te passei.</p>
+</body>
+</html>

@@ -1,81 +1,88 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation } from '@react-navigation/native';
+import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
+import { db, auth } from './firebaseConfig';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 
-export default function AdminLoginScreen() {
-  const navigation = useNavigation();
-  const [senhaDigitada, setSenhaDigitada] = useState('');
+export default function AdminLoginScreen({ navigation }) {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
 
-  // === LIMPEZA AUTOMÁTICA DE ESTADOS AO SAIR DA TELA ===
-  useFocusEffect(
-    useCallback(() => {
-      return () => {
-        setSenhaDigitada("");
-      };
-    }, [])
-  );
+  const handleLogin = async () => {
+    if (!username.trim() || !password) {
+      Alert.alert('Erro', 'Informe usuário e senha');
+      return;
+    }
 
+    const isEmail = (s) => /\S+@\S+\.\S+/.test(s);
+    if (!isEmail(username.trim())) {
+      Alert.alert('Erro', 'Informe um e-mail válido para administrador');
+      return;
+    }
 
-  const verificarSenha = async () => {
-    const dadosAdmin = await AsyncStorage.getItem('admin');
-    const senhaSalva = dadosAdmin ? JSON.parse(dadosAdmin).senha : null;
+    try {
+      // check if there are any admins at all
+      const adminsSnapshot = await getDocs(collection(db, 'admins'));
+      if (adminsSnapshot.empty) {
+        // create first admin in Firebase Auth and link to admins collection
+        const email = username.trim();
+        const userCred = await createUserWithEmailAndPassword(auth, email, password);
+        const uid = userCred.user.uid;
+        const docRef = await addDoc(collection(db, 'admins'), {
+          uid,
+          email,
+          role: 'admin',
+          createdAt: new Date().toISOString(),
+        });
+        await AsyncStorage.setItem('adminData', JSON.stringify({ id: docRef.id, uid, email }));
+        Alert.alert('Administrador criado', 'Primeiro administrador criado com sucesso.');
+        navigation.replace('AdminPanel');
+        return;
+      }
 
-    if (senhaDigitada === senhaSalva) {
-      await AsyncStorage.setItem('isAdmin', 'true'); // ✅ sinaliza que é admin
-      navigation.navigate('Home'); // ✅ redireciona para tela principal
-    } else {
-      Alert.alert('Senha incorreta');
+      // normal login via Firebase Auth
+      const email = username.trim();
+      const userCred = await signInWithEmailAndPassword(auth, email, password);
+      const uid = userCred.user.uid;
+
+      const q = query(collection(db, 'admins'), where('uid', '==', uid));
+      const snapshot = await getDocs(q);
+      if (snapshot.empty) {
+        Alert.alert('Erro', 'Conta autenticada, mas sem permissão de administrador.');
+        return;
+      }
+      const docSnap = snapshot.docs[0];
+      const data = docSnap.data();
+
+      // success
+      await AsyncStorage.setItem('adminData', JSON.stringify({ id: docSnap.id, uid, email }));
+      navigation.replace('AdminPanel');
+    } catch (error) {
+      console.error('Admin login error:', error);
+      Alert.alert('Erro', 'Falha ao autenticar admin.');
     }
   };
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.voltar}>
-        <Text style={styles.voltarTexto}>← Voltar</Text>
-      </TouchableOpacity>
+      <Text style={styles.title}>Login Admin</Text>
+  <TextInput style={styles.input} placeholder="E-mail" value={username} onChangeText={setUsername} keyboardType="email-address" autoCapitalize="none" />
+  <TextInput style={styles.input} placeholder="Senha" value={password} onChangeText={setPassword} secureTextEntry />
 
-      <Text style={styles.titulo}>Acesso do Administrador</Text>
+      <TouchableOpacity style={styles.btn} onPress={handleLogin}><Text style={styles.btnText}>Entrar</Text></TouchableOpacity>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Digite a senha"
-        secureTextEntry
-        value={senhaDigitada}
-        onChangeText={setSenhaDigitada}
-      />
-
-      <TouchableOpacity style={styles.botao} onPress={verificarSenha}>
-        <Text style={styles.botaoTexto}>Entrar</Text>
+      <TouchableOpacity style={{ marginTop: 12 }} onPress={() => navigation.goBack()}>
+        <Text style={{ color: '#1565c0' }}>← Voltar</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, justifyContent: 'center', backgroundColor: '#fff' },
-  voltar: { position: 'absolute', top: 40, left: 20 },
-  voltarTexto: { fontSize: 16, color: '#1565c0', fontWeight: 'bold' },
-  titulo: { fontSize: 22, fontWeight: 'bold', marginBottom: 20, textAlign: 'center', color: '#0d47a1' },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 6,
-    padding: 10,
-    marginBottom: 20,
-  },
-  botao: {
-    backgroundColor: '#1565c0',
-    padding: 12,
-    borderRadius: 6,
-    alignItems: 'center',
-  },
-  botaoTexto: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  container: { flex: 1, padding: 20, backgroundColor: '#fff', justifyContent: 'center' },
+  title: { fontSize: 22, fontWeight: '700', marginBottom: 12 },
+  input: { backgroundColor: '#f2f8ff', padding: 12, borderRadius: 8, marginBottom: 10 },
+  btn: { backgroundColor: '#0077cc', padding: 12, borderRadius: 8, alignItems: 'center' },
+  btnText: { color: '#fff', fontWeight: '700' },
 });

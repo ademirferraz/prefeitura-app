@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { db } from '../firebaseConfig';
+import { db } from './firebaseConfig';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
 
 const EVENT_TYPES = [

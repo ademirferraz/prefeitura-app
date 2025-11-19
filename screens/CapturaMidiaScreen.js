@@ -1,70 +1,115 @@
-// screens/CapturaMidiaScreen.js
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, Image, Alert, StyleSheet, ActivityIndicator } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { collection, addDoc } from 'firebase/firestore';
+import { db, storageApp } from './firebaseConfig';
 
 export default function CapturaMidiaScreen({ navigation }) {
-  const [imagem, setImagem] = useState(null);
+  const [imageUri, setImageUri] = useState(null);
+  const [uploading, setUploading] = useState(false);
 
-  const tirarFoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert("Erro", "Permissão para usar a câmera é necessária!");
-      return;
-    }
+  useEffect(() => {
+    (async () => {
+      try {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Permissão', 'É necessária permissão de câmera/galeria para enviar mídia.');
+        }
+      } catch (e) {
+        console.warn('Permissão de mídia falhou', e);
+      }
+    })();
+  }, []);
 
-    const resultado = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      quality: 0.7,
-    });
-
-    if (!resultado.canceled) {
-      setImagem(resultado.assets[0].uri);
-      Alert.alert("Sucesso!", "Foto enviada para análise da prefeitura.");
+  const pickImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.All, quality: 0.7 });
+      if (!result.cancelled && result.uri) setImageUri(result.uri);
+    } catch (error) {
+      console.error('Erro picker:', error);
+      Alert.alert('Erro', 'Não foi possível selecionar a imagem.');
     }
   };
 
-  const escolherFoto = async () => {
-    const resultado = await ImagePicker.launchImageLibraryAsync({
-      allowsEditing: true,
-      quality: 0.7,
-    });
+  const takePhoto = async () => {
+    try {
+      const result = await ImagePicker.launchCameraAsync({ quality: 0.7 });
+      if (!result.cancelled && result.uri) setImageUri(result.uri);
+    } catch (error) {
+      console.error('Erro câmera:', error);
+      Alert.alert('Erro', 'Não foi possível abrir a câmera.');
+    }
+  };
 
-    if (!resultado.canceled) {
-      setImagem(resultado.assets[0].uri);
-      Alert.alert("Sucesso!", "Foto selecionada e enviada!");
+  const uploadMedia = async () => {
+    if (!imageUri) {
+      Alert.alert('Erro', 'Selecione ou tire uma foto antes de enviar.');
+      return;
+    }
+    setUploading(true);
+    try {
+      const response = await fetch(imageUri);
+      const blob = await response.blob();
+
+      const storage = getStorage(storageApp);
+      const filename = `uploads/${Date.now()}`;
+      const storageRef = ref(storage, filename);
+      await uploadBytes(storageRef, blob);
+      const url = await getDownloadURL(storageRef);
+
+      const userJson = await AsyncStorage.getItem('userData');
+      const user = userJson ? JSON.parse(userJson) : null;
+
+      await addDoc(collection(db, 'midias'), {
+        url,
+        autorId: user?.id || null,
+        autorNome: user?.nome || null,
+        status: 'pendente_moderação',
+        createdAt: new Date().toISOString(),
+      });
+
+      Alert.alert('Sucesso', 'Mídia enviada com sucesso e aguardando moderação.');
+      setImageUri(null);
+      navigation.goBack();
+    } catch (error) {
+      console.error('Erro upload:', error);
+      Alert.alert('Erro', 'Falha ao enviar mídia.');
+    } finally {
+      setUploading(false);
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Captura de Mídia</Text>
-      <Text style={styles.subtitle}>Envie fotos de problemas na cidade</Text>
+      <Text style={styles.title}>Enviar Mídia</Text>
 
-      <TouchableOpacity style={styles.btn} onPress={tirarFoto}>
-        <Text style={styles.btnText}>Tirar Foto</Text>
-      </TouchableOpacity>
+      <View style={styles.buttonsRow}>
+        <TouchableOpacity style={styles.btn} onPress={pickImage}><Text style={styles.btnText}>Selecionar</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.btn} onPress={takePhoto}><Text style={styles.btnText}>Tirar Foto</Text></TouchableOpacity>
+      </View>
 
-      <TouchableOpacity style={styles.btn} onPress={escolherFoto}>
-        <Text style={styles.btnText}>Escolher da Galeria</Text>
-      </TouchableOpacity>
+      {imageUri && <Image source={{ uri: imageUri }} style={styles.preview} />}
 
-      {imagem && <Image source={{ uri: imagem }} style={styles.preview} />}
+      {uploading ? (
+        <ActivityIndicator size="large" color="#0077cc" style={{ marginTop: 12 }} />
+      ) : (
+        <TouchableOpacity style={[styles.btn, { marginTop: 12 }]} onPress={uploadMedia}><Text style={styles.btnText}>Enviar</Text></TouchableOpacity>
+      )}
 
-      <TouchableOpacity style={styles.voltar} onPress={() => navigation.goBack()}>
-        <Text style={styles.voltarText}>Voltar</Text>
+      <TouchableOpacity style={{ marginTop: 12 }} onPress={() => navigation.goBack()}>
+        <Text style={{ color: '#1565c0' }}>← Voltar</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#f8f9fa', alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: 26, fontWeight: 'bold', color: '#2c3e50', marginBottom: 10 },
-  subtitle: { fontSize: 16, color: '#7f8c8d', marginBottom: 30, textAlign: 'center' },
-  btn: { backgroundColor: '#3498db', width: '80%', padding: 18, borderRadius: 12, alignItems: 'center', marginVertical: 10 },
-  btnText: { color: '#fff', fontWeight: 'bold', fontSize: 18 },
-  preview: { width: 300, height: 300, borderRadius: 12, marginVertical: 20 },
-  voltar: { marginTop: 40 },
-  voltarText: { fontSize: 18, color: '#e74c3c', fontWeight: 'bold' },
+  container: { flex: 1, padding: 20, backgroundColor: '#fff' },
+  title: { fontSize: 20, fontWeight: '700', marginBottom: 12 },
+  buttonsRow: { flexDirection: 'row' },
+  btn: { backgroundColor: '#0077cc', padding: 12, borderRadius: 8, alignItems: 'center', marginRight: 8 },
+  btnText: { color: '#fff', fontWeight: '700' },
+  preview: { width: '100%', height: 300, marginTop: 12, borderRadius: 8 },
 });
